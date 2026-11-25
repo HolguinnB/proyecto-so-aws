@@ -108,6 +108,40 @@ MemoryHigh=450M
 MemoryMax=550M
 GARANTIA
 
+echo "[extra] Compilando monitor y descontrolado..."
+# Herramientas de medición: legibles por todos para que cualquier usuario pueda ejecutarlas
+install -d -m 755 /opt/herramientas
+javac -encoding UTF-8 -d /opt/herramientas "$RAIZ/src/monitor/Monitor.java" "$RAIZ/src/descontrolado/Descontrolado.java"
+chmod -R a+rX /opt/herramientas
+
+echo "[extra] Configurando garantías de recursos (cgroups)..."
+# Drop-in = archivo que agrega propiedades a una unidad de systemd sin tocar la original.
+# Sobrescribirlos siempre es seguro (idempotente).
+install -d /etc/systemd/system/servicio.service.d /etc/systemd/system/user.slice.d /etc/systemd/system/system.slice.d
+
+# SERVICIO: memoria protegida (low), con estrangulamiento (high) y tope duro (max)
+cat > /etc/systemd/system/servicio.service.d/50-garantias.conf <<GARANTIA
+[Service]
+MemoryLow=150M
+MemoryHigh=250M
+MemoryMax=300M
+GARANTIA
+
+# system.slice (padre del servicio): memory.low solo protege de verdad si el padre también lo declara
+cat > /etc/systemd/system/system.slice.d/50-garantias.conf <<GARANTIA
+[Slice]
+MemoryLow=150M
+GARANTIA
+
+# USUARIOS (user.slice): poco peso de CPU, tope de 1 CPU y límites de memoria
+cat > /etc/systemd/system/user.slice.d/50-garantias.conf <<GARANTIA
+[Slice]
+CPUWeight=20
+CPUQuota=100%
+MemoryHigh=450M
+MemoryMax=550M
+GARANTIA
+
 echo "[7/7] Arrancando el servicio..."
 systemctl daemon-reload                 # releer los archivos de configuración
 systemctl enable "$SERVICIO"            # que arranque solo al encender la instancia
