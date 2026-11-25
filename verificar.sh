@@ -72,6 +72,15 @@ chequear "El registro tiene líneas en $DIR_LOG/servicio.log" '[ -s "$DIR_LOG/se
 chequear "El sistema usa cgroups v2" '[ "$(stat -fc %T /sys/fs/cgroup)" = "cgroup2fs" ]'
 chequear "El servicio tiene su propio cgroup" '[ -d /sys/fs/cgroup/system.slice/$SERVICIO.service ]'
 
+# ---- Garantías de recursos (cgroups) ----
+chequear "user.slice: cpu.weight = 20" '[ "$(cat /sys/fs/cgroup/user.slice/cpu.weight)" = "20" ]'
+chequear "user.slice: tope de CPU de 1 CPU (cpu.max = 100000 100000)" '[ "$(cat /sys/fs/cgroup/user.slice/cpu.max)" = "100000 100000" ]'
+chequear "user.slice: memory.high = 450 MB" '[ "$(cat /sys/fs/cgroup/user.slice/memory.high)" = "471859200" ]'
+chequear "user.slice: memory.max = 550 MB" '[ "$(cat /sys/fs/cgroup/user.slice/memory.max)" = "576716800" ]'
+chequear "Servicio: memory.low = 150 MB" '[ "$(cat /sys/fs/cgroup/system.slice/servicio.service/memory.low)" = "157286400" ]'
+chequear "Servicio: memory.high = 250 MB" '[ "$(cat /sys/fs/cgroup/system.slice/servicio.service/memory.high)" = "262144000" ]'
+chequear "Servicio: memory.max = 300 MB" '[ "$(cat /sys/fs/cgroup/system.slice/servicio.service/memory.max)" = "314572800" ]'
+
 echo "================================="
 echo "Resultado: $PASARON de $TOTAL verificaciones pasaron."
 # Código de salida: 0 si todo pasó, 1 si algo falló
